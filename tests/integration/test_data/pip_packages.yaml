@@ -87,3 +87,96 @@ with_deps:
 local_path:
   repo: https://github.com/cachito-testing/cachito-pip-local-path.git
   ref: d66f7e029a15e8dc96ced65865344e6088c3fdd5
+# Test pip with cached dependencies
+# original_repo: Repo for Cachito request
+# dep_repo: Dependency for original_repo
+# test_branch: Branch in original_repo, dep_repo. Will be deleted after usage
+# expected_files: Expected source files <relative_path>: <file_URL>
+# expected_deps_files: Expected dependencies files <relative_path>
+# response_expectations: Parts of the Cachito response to check
+# purl: PURL of the package
+# dep_purls: PURLs if dependencies
+cached_deps:
+  original_repo: https://github.com/cachito-testing/cachito-pip-with-deps.git
+  dep_repo: https://github.com/cachito-testing/cachito-pip-without-deps.git
+  test_branch: test-cached-deps
+  ssh_git_repo: "git@github.com:cachito-testing/cachito-pip-with-deps.git"
+  ssh_git_dep: "git@github.com:cachito-testing/cachito-pip-without-deps.git"
+  dep_archive_baseurl: "https://github.com/cachito-testing/cachito-pip-without-deps/archive/"
+  pkg_managers: ["pip"]
+  expected_files:
+    deps/pip/aiowsgi/aiowsgi-0.7.tar.gz: https://files.pythonhosted.org/packages/f4/3d/1933776c5215c61e38968fedd73c41251e8752736e1cd9fbb73db44ff4e1/aiowsgi-0.7.tar.gz
+    deps/pip/external-appr/appr-external-sha256-ee6a0a38bed8cff46a562ed3620bc453141a02262ab0c8dd055824af2829ee5c.zip: https://github.com/quay/appr/tarball/37ff9a487a54ad41b59855ecd76ee092fe206a84
+    deps/pip/external-appr/appr-external-sha256-FIRST_DEP_HASH.zip: https://github.com/cachito-testing/cachito-pip-without-deps/tarball/3fe2fc3cb8ffa36317cacbd9d356e35e17af2824
+    deps/pip/github.com/quay/appr/appr-external-gitcommit-58c88e4952e95935c0dd72d4a24b0c44f2249f5b.tar.gz: https://github.com/quay/appr/tarball/58c88e4952e95935c0dd72d4a24b0c44f2249f5b
+    deps/pip/github.com/cachito-testing/cachito-pip-without-deps/cachito-pip-without-deps-external-gitcommit-SECOND_DEP_COMMIT.tar.gz: https://github.com/cachito-testing/cachito-pip-without-deps/tarball/3fe2fc3cb8ffa36317cacbd9d356e35e17af2824
+  response_expectations:
+    dependencies:
+    - dev: false
+      name: "appr"
+      replaces: null
+      type: "pip"
+      version: "git+https://github.com/quay/appr.git@58c88e4952e95935c0dd72d4a24b0c44f2249f5b"
+    - dev: false
+      name: "appr"
+      replaces: null
+      type: "pip"
+      version: "https://github.com/quay/appr/archive/37ff9a487a54ad41b59855ecd76ee092fe206a84.zip#egg=appr&cachito_hash=sha256:ee6a0a38bed8cff46a562ed3620bc453141a02262ab0c8dd055824af2829ee5c"
+    - dev: false
+      name: "aiowsgi"
+      replaces: null
+      type: "pip"
+      version: "0.7"
+    - dev: false
+      name: "appr"
+      replaces: null
+      type: "pip"
+      version: "https://github.com/cachito-testing/cachito-pip-without-deps/archive/FIRST_DEP_COMMIT.zip#egg=appr&cachito_hash=sha256:FIRST_DEP_HASH"
+    - dev: false
+      name: "appr"
+      replaces: null
+      type: "pip"
+      version: "git+https://github.com/cachito-testing/cachito-pip-without-deps.git@SECOND_DEP_COMMIT"
+    packages:
+    - dependencies:
+      - dev: false
+        name: "appr"
+        replaces: null
+        type: "pip"
+        version: "git+https://github.com/quay/appr.git@58c88e4952e95935c0dd72d4a24b0c44f2249f5b"
+      - dev: false
+        name: "appr"
+        replaces: null
+        type: "pip"
+        version: "https://github.com/quay/appr/archive/37ff9a487a54ad41b59855ecd76ee092fe206a84.zip#egg=appr&cachito_hash=sha256:ee6a0a38bed8cff46a562ed3620bc453141a02262ab0c8dd055824af2829ee5c"
+      - dev: false
+        name: "aiowsgi"
+        replaces: null
+        type: "pip"
+        version: "0.7"
+      - dev: false
+        name: "appr"
+        replaces: null
+        type: "pip"
+        version: "git+https://github.com/cachito-testing/cachito-pip-without-deps.git@SECOND_DEP_COMMIT"
+      - dev: false
+        name: "appr"
+        replaces: null
+        type: "pip"
+        version: "https://github.com/cachito-testing/cachito-pip-without-deps/archive/FIRST_DEP_COMMIT.zip#egg=appr&cachito_hash=sha256:FIRST_DEP_HASH"
+      name: "cachito-pip-with-deps"
+      type: "pip"
+      version: "1.0.0"
+  purl: "pkg:github/cachito-testing/cachito-pip-with-deps@MAIN_REPO_COMMIT"
+  dep_purls:
+    - "pkg:generic/appr?download_url=https%3A%2F%2Fgithub.com%2Fcachito-testing%2Fcachito-pip-without-deps%2Farchive%2FFIRST_DEP_COMMIT.zip%23egg%3Dappr%26cachito_hash%3Dsha256%3AFIRST_DEP_HASH&checksum=sha256:FIRST_DEP_HASH"
+    - "pkg:generic/appr?download_url=https%3A%2F%2Fgithub.com%2Fquay%2Fappr%2Farchive%2F37ff9a487a54ad41b59855ecd76ee092fe206a84.zip%23egg%3Dappr%26cachito_hash%3Dsha256%3Aee6a0a38bed8cff46a562ed3620bc453141a02262ab0c8dd055824af2829ee5c&checksum=sha256:ee6a0a38bed8cff46a562ed3620bc453141a02262ab0c8dd055824af2829ee5c"
+    - "pkg:github/cachito-testing/cachito-pip-without-deps@SECOND_DEP_COMMIT"
+    - "pkg:github/quay/appr@58c88e4952e95935c0dd72d4a24b0c44f2249f5b"
+    - "pkg:pypi/aiowsgi@0.7"
+  source_purls:
+    - "pkg:generic/appr?download_url=https%3A%2F%2Fgithub.com%2Fcachito-testing%2Fcachito-pip-without-deps%2Farchive%2FFIRST_DEP_COMMIT.zip%23egg%3Dappr%26cachito_hash%3Dsha256%3AFIRST_DEP_HASH&checksum=sha256:FIRST_DEP_HASH"
+    - "pkg:generic/appr?download_url=https%3A%2F%2Fgithub.com%2Fquay%2Fappr%2Farchive%2F37ff9a487a54ad41b59855ecd76ee092fe206a84.zip%23egg%3Dappr%26cachito_hash%3Dsha256%3Aee6a0a38bed8cff46a562ed3620bc453141a02262ab0c8dd055824af2829ee5c&checksum=sha256:ee6a0a38bed8cff46a562ed3620bc453141a02262ab0c8dd055824af2829ee5c"
+    - "pkg:github/cachito-testing/cachito-pip-without-deps@SECOND_DEP_COMMIT"
+    - "pkg:github/quay/appr@58c88e4952e95935c0dd72d4a24b0c44f2249f5b"
+    - "pkg:pypi/aiowsgi@0.7"
