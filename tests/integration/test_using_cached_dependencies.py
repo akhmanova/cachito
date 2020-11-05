@@ -137,6 +137,13 @@ class TestCachedDependencies:
 class TestPipCachedDependencies:
     """Test class for pip cached dependencies."""
 
+    @pytest.fixture(autouse=True)
+    def setup_method_fixture(self, test_env):
+        """Get git user & git email."""
+        self.directories = []
+        self.git_user = test_env["cached_dependencies"]["test_repo"].get("git_user")
+        self.git_email = test_env["cached_dependencies"]["test_repo"].get("git_email")
+
     def teardown_method(self, method):
         """Delete branch with commit in the main repo."""
         delete_branch_and_check(
@@ -180,6 +187,18 @@ class TestPipCachedDependencies:
         self.cloned_dep_repo = clone_repo_in_new_dir(
             env_data["ssh_git_dep"], self.branch, dep_repo_dir
         )
+        # Download the main repo into a new dir
+        main_repo_dir = os.path.join(tmpdir, "main")
+        self.cloned_main_repo = clone_repo_in_new_dir(
+            env_data["ssh_git_repo"], self.branch, main_repo_dir
+        )
+        # set user configuration, if available
+        if self.git_user:
+            self.cloned_dep_repo.config_writer().set_value("user", "name", self.git_user).release()
+            self.cloned_main_repo.config_writer().set_value("user", "name", self.git_user).release()
+        if self.git_email:
+            self.cloned_dep_repo.config_writer().set_value("user", "email", self.git_email).release()
+            self.cloned_main_repo.config_writer().set_value("user", "email", self.git_email).release()
         # Make changes in dependency repo
         # We need 2 commits:
         # 1st for remote source archive dependency
@@ -203,11 +222,6 @@ class TestPipCachedDependencies:
         # Get the archive hash
         dep_hash = utils.get_sha256_hash_from_file(archive_name)
 
-        # Download the main repo into a new dir
-        main_repo_dir = os.path.join(tmpdir, "main")
-        self.cloned_main_repo = clone_repo_in_new_dir(
-            env_data["ssh_git_repo"], self.branch, main_repo_dir
-        )
         # Add new dependencies into the main repo
         with open(os.path.join(main_repo_dir, "requirements.txt"), "a") as f:
             f.write(
