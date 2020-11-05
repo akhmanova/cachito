@@ -85,9 +85,9 @@ cached_dependencies:
     # The URL of the repository
     https_url: "./tmp/cachito-archives/integration-tests-git-repo.git"
     # test repo user
-    git_user: "Arthur Dent"
+    git_user: "Elina Akhmanova"
     # test repo user email
-    git_email: "dent42@cachito.rocks"
+    git_email: "eakhmano@redhat.com"
     # Package managers
     pkg_managers: ["gomod"]
 # Test data for the HTTP GET_ALL test
