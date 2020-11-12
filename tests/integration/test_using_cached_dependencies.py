@@ -26,14 +26,14 @@ def create_local_repository(repo_path):
     return str(bare_repo_dir.resolve())
 
 
-class TestCachedDependencies:
+class TestCachedPackage:
     """Test class for cached dependencies."""
 
     @pytest.fixture(autouse=True)
     def setup_method_fixture(self, test_env):
         """Create bare git repo and a pool for removing shared directories."""
         self.directories = []
-        self.env_data = utils.load_test_data("cached_dependencies.yaml")
+        self.env_data = utils.load_test_data("cached_dependencies.yaml")["cached_package"]
         self.git_user = self.env_data["test_repo"].get("git_user")
         self.git_email = self.env_data["test_repo"].get("git_email")
         if self.env_data["test_repo"].get("use_local"):
@@ -47,7 +47,7 @@ class TestCachedDependencies:
         for directory in self.directories:
             shutil.rmtree(directory)
 
-    def test_using_cached_dependencies(self, tmpdir, test_env):
+    def test_using_cached_package(self, tmpdir, test_env):
         """
         Check that the cached dependencies are used instead of downloading them from repo again.
 
@@ -103,13 +103,7 @@ class TestCachedDependencies:
             ), f"Commit {commit} is not in branches (it should be there)."
 
         finally:
-            repo.git.push("--delete", remote.name, branch_name)
-
-        repo.heads.master.checkout()
-        repo.git.branch("-D", branch_name)
-        assert not repo.git.branch(
-            "-a", "--contains", commit
-        ), f"Commit {commit} is still in a branch (it shouldn't be there at this point)."
+            delete_branch_and_check(branch_name, repo, remote, [commit])
 
         response = client.create_new_request(
             payload={
@@ -129,3 +123,18 @@ class TestCachedDependencies:
         first_deps = utils.make_list_of_packages_hashable(first_response.data["dependencies"])
         second_deps = utils.make_list_of_packages_hashable(second_response.data["dependencies"])
         assert first_deps == second_deps
+
+
+def delete_branch_and_check(branch, repo, remote, commits):
+    """
+    Delete remote branch and check that commits were deleted.
+    :param str branch: Remote branch to delete
+    :param git.Repo repo: Git repository
+    :param remote: Git remote with branch to delete
+    :param list commits: List of commits to check were deleted
+    """
+    repo.git.push("--delete", remote.name, branch)
+    repo.heads.master.checkout()
+    repo.git.branch("-D", branch)
+    for commit in commits:
+        assert not repo.git.branch("-a", "--contains", commit)
