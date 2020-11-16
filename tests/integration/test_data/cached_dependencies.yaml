@@ -7,15 +7,20 @@ cached_package:
   test_repo:
     # Use local bare remote repository
     # If this is used, the git urls below should be paths and should be available for the workers
-    use_local: True
+#    use_local: True
+    use_local: False
     # The tracked repository (remote)
-    ssh_url: "./tmp/cachito-archives/integration-tests-git-repo.git"
+#    ssh_url: "./tmp/cachito-archives/integration-tests-git-repo.git"
+    ssh_url: "git@github.com:cachito-testing/cachito_test_repo.git"
     # The URL of the repository
-    https_url: "./tmp/cachito-archives/integration-tests-git-repo.git"
+#    https_url: "./tmp/cachito-archives/integration-tests-git-repo.git"
+    https_url: "https://github.com/cachito-testing/cachito_test_repo.git"
     # test repo user
-    git_user: "Arthur Dent"
+#    git_user: "Arthur Dent"
+#    git_user: "jenkins-cb-bot"
     # test repo user email
-    git_email: "dent42@cachito.rocks"
+#    git_email: "dent42@cachito.rocks"
+#    git_email: "jenkins.cb.bot@gmail.com"
     # Package managers
     pkg_managers: ["gomod"]
 # Test pip with cached dependencies

@@ -131,17 +131,35 @@ class TestPipCachedDependencies:
 
     @pytest.fixture(autouse=True)
     def setup_method_fixture(self, test_env):
-        """Create list of local directories to delete in teardown."""
+        """Prepare test data and git parameters."""
+        # Temporary directory for keeping local repos
         self.directories = []
+        # Test branch
         generated_suffix = "".join(
             random.choice(string.ascii_letters + string.digits) for x in range(10)
         )
         self.branch = f"test-{generated_suffix}"
 
+        self.env_data = utils.load_test_data("cached_dependencies.yaml")["cached_deps"]
+        # Seed repo for pulling data
+        self.env_data["seed_main_repo"] = self.env_data["ssh_main_repo"]
+        self.env_data["seed_dep_repo"] = self.env_data["ssh_dep_repo"]
+        if self.env_data.get("use_local"):
+            self.env_data["ssh_main_repo"] = self.env_data["https_main_repo"] = create_local_repository(
+                self.env_data["local_main_repo"]
+            )
+            self.env_data["ssh_dep_repo"] = self.env_data["https_dep_repo"] = create_local_repository(
+                self.env_data["local_dep_repo"]
+            )
+            self.directories.extend([self.env_data["ssh_main_repo"], self.env_data["ssh_dep_repo"]])
+
+        self.git_user = self.env_data.get("git_user")
+        self.git_email = self.env_data.get("git_email")
+
     def teardown_method(self, method):
         """Delete test branch and local directories."""
         delete_branch_and_check(
-            self.branch, self.cloned_main_repo, self.main_repo_origin, [self.main_repo_commit]
+            self.branch, self.cloned_main_repo, self.main_remote, [self.main_repo_commit]
         )
         for directory in self.directories:
             shutil.rmtree(directory)
@@ -173,82 +191,80 @@ class TestPipCachedDependencies:
         under deps/pip directory.
         * The content manifest is successfully generated and contains correct content.
         """
-        env_data = utils.load_test_data("cached_dependencies.yaml")["cached_deps"]
-        env_data["seed_main_repo"] = env_data["ssh_main_repo"]
-        env_data["seed_dep_repo"] = env_data["ssh_dep_repo"]
-        if env_data.get("use_local"):
-            env_data["ssh_main_repo"] = env_data["https_main_repo"] = create_local_repository(
-                env_data["local_main_repo"]
-            )
-            env_data["ssh_dep_repo"] = env_data["https_dep_repo"] = create_local_repository(
-                env_data["local_main_repo"]
-            )
-            self.directories.extend([env_data["ssh_main_repo"], env_data["ssh_dep_repo"]])
-
         # Download dependency repo into a new directory
         dep_repo_dir = os.path.join(tmpdir, "dep")
-        self.cloned_dep_repo = clone_repo_in_new_dir(
-            env_data["seed_dep_repo"], self.branch, dep_repo_dir
+        cloned_dep_repo = clone_repo_in_new_dir(
+            self.env_data["seed_dep_repo"], self.branch, dep_repo_dir
         )
+        dep_remote = cloned_dep_repo.create_remote("seed_dep_repo", url=self.env_data["seed_dep_repo"])
+        if self.env_data.get("use_local"):
+            dep_remote.pull()
+
         # Make changes in dependency repo
         # We need 2 commits:
         # 1st for remote source archive dependency
         # 2nd for VCS dependency
-        dep_remote = self.cloned_dep_repo.create_remote("test", url=env_data["ssh_main_repo"])
-        dep_remote.pull(rebase=True)
         new_dep_commits = []
-        for _ in range(2):
-            self.cloned_dep_repo.git.commit(
-                "--allow-empty", m="Commit created in integration test for Cachito"
-            )
-            new_dep_commits.append(self.cloned_dep_repo.head.object.hexsha)
-        # Push changes
-
-        assert dep_remote.exists()
         if self.git_user:
-            self.cloned_dep_repo.config_writer().set_value("user", "name", self.git_user).release()
+            cloned_dep_repo.config_writer().set_value("user", "name", self.git_user).release()
         if self.git_email:
-            self.cloned_dep_repo.config_writer().set_value(
+            cloned_dep_repo.config_writer().set_value(
                 "user", "email", self.git_email
             ).release()
-        self.cloned_dep_repo.git.push("-u", dep_remote.name, self.branch)
+        for _ in range(2):
+            cloned_dep_repo.git.commit(
+                "--allow-empty", m="Commit created in integration test for Cachito"
+            )
+            new_dep_commits.append(cloned_dep_repo.head.object.hexsha)
+        # Push changes
+        assert dep_remote.exists()
+        cloned_dep_repo.git.push("-u", dep_remote.name, self.branch)
 
         # Download the main repo into a new dir
         main_repo_dir = os.path.join(tmpdir, "main")
         self.cloned_main_repo = clone_repo_in_new_dir(
-            env_data["ssh_git_repo"], self.branch, main_repo_dir
+            self.env_data["ssh_main_repo"], self.branch, main_repo_dir
         )
         # Add new dependencies into the main repo
+        self.main_remote = self.cloned_main_repo.create_remote("seed_main_repo", url=self.env_data["seed_main_repo"])
+        if self.env_data.get("use_local"):
+            self.main_remote.pull()
+        if self.git_user:
+            self.cloned_main_repo.config_writer().set_value("user", "name", self.git_user).release()
+        if self.git_email:
+            self.cloned_main_repo.config_writer().set_value(
+                "user", "email", self.git_email
+            ).release()
         with open(os.path.join(main_repo_dir, "requirements.txt"), "a") as f:
-            if not env_data.get("use_local"):
+            if not self.env_data.get("use_local"):
                 # Download the archive with first commit changes
                 archive_name = os.path.join(tmpdir, f"{new_dep_commits[0]}.zip")
                 utils.download_archive(
-                    f"{env_data['dep_archive_baseurl']}{new_dep_commits[0]}.zip", archive_name
+                    f"{self.env_data['dep_archive_baseurl']}{new_dep_commits[0]}.zip", archive_name
                 )
                 # Get the archive hash
                 dep_hash = utils.get_sha256_hash_from_file(archive_name)
                 f.write(
-                    f"{env_data['dep_archive_baseurl']}{new_dep_commits[0]}"
+                    f"{self.env_data['dep_archive_baseurl']}{new_dep_commits[0]}"
                     f".zip#egg=appr&cachito_hash=sha256:{dep_hash}\n"
                 )
-            f.write(f"git+{env_data['ssh_dep_repo']}@{new_dep_commits[1]}#egg=appr\n")
+
+            f.write(f"git+{self.env_data['https_dep_repo']}@{new_dep_commits[1]}#egg=appr\n")
 
         diff_files = self.cloned_main_repo.git.diff(None, name_only=True)
         self.cloned_main_repo.git.add(diff_files)
         self.cloned_main_repo.git.commit("-m", "test commit")
         self.main_repo_commit = self.cloned_main_repo.head.object.hexsha
-        self.main_repo_origin = self.cloned_main_repo.remote(name="origin")
-        self.main_repo_origin.push(self.branch)
+        self.main_remote.push(self.branch)
 
         # Create new Cachito request
         client = utils.Client(
             test_env["api_url"], test_env["api_auth_type"], test_env.get("timeout")
         )
         payload = {
-            "repo": env_data["https_main_repo"],
+            "repo": self.env_data["https_main_repo"],
             "ref": self.main_repo_commit,
-            "pkg_managers": env_data["pkg_managers"],
+            "pkg_managers": self.env_data["pkg_managers"],
         }
         try:
             initial_response = client.create_new_request(payload=payload)
@@ -256,7 +272,7 @@ class TestPipCachedDependencies:
         finally:
             # Delete the dependency branch
             delete_branch_and_check(
-                self.branch, self.cloned_dep_repo, self.dep_repo_origin, new_dep_commits
+                self.branch, cloned_dep_repo, dep_remote, new_dep_commits
             )
 
         replace_rules = {
@@ -265,14 +281,14 @@ class TestPipCachedDependencies:
             "FIRST_DEP_HASH": dep_hash,
             "MAIN_REPO_COMMIT": self.main_repo_commit,
         }
-        update_expected_data(env_data, replace_rules)
+        update_expected_data(self.env_data, replace_rules)
 
-        assert_successful_cached_request(completed_response, env_data, tmpdir, client)
+        assert_successful_cached_request(completed_response, self.env_data, tmpdir, client)
         # Create new Cachito request to test cached deps
         initial_response = client.create_new_request(payload=payload)
         completed_response = client.wait_for_complete_request(initial_response)
 
-        assert_successful_cached_request(completed_response, env_data, tmpdir, client)
+        assert_successful_cached_request(completed_response, self.env_data, tmpdir, client)
 
 
 def assert_successful_cached_request(response, env_data, tmpdir, client):
