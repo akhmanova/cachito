@@ -596,7 +596,7 @@ Versions supported      | >= 1.13 | < 7 | >= 10 | >= 1.12.0, < 2 |
 Baseline                |  ✓      | ✓   | ✓     | ✓              |
 Content Manifest        |  ✓      | ✓   | ✓     | ✓              |
 Dependency Replacements |  ✓      | x   | x     | x              |
-Dev Dependencies        |  ✓      | ✓   | ✓     | x              |
+Dev Dependencies        |  ✓<sup>2</sup>      | ✓   | ✓     | x              |
 External Dependencies   |  N/A    | ✓   | ✓     | ✓              |
 Multiple Paths          |  ✓      | ✓   | ✓     | ✓              |
 Nested Dependencies     |  ✓      | ✓   | x     | ✓              |
