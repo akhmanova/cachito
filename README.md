@@ -410,15 +410,15 @@ Custom configuration for the Celery workers are listed below:
 * `cachito_nexus_hoster_password` - the password of the Nexus service account used by Cachito for
   the Nexus instance that has the hosted repositories. This is used instead of
   `cachito_nexus_password` for uploading content if you are using the two Nexus instance approach as
-  described in the "Nexus For Java Script" section. If this is set, `cachito_nexus_hoster_username` must
+  described in the "Nexus Common Configuration" section. If this is set, `cachito_nexus_hoster_username` must
   also be set.
 * `cachito_nexus_hoster_url` - the URL to the Nexus instance that has the hosted repositories. This
   is used instead of `cachito_nexus_url` for uploading content if you are using the two Nexus
-  instance approach as described in the "Nexus For Java Script" section.
+  instance approach as described in the "Nexus Common Configuration" section.
 * `cachito_nexus_hoster_username` - the username of the Nexus service account used by Cachito for
   the Nexus instance that has the hosted repositories. This is used instead of
   `cachito_nexus_username` for uploading content if you are using the two Nexus instance approach as
-  described in the "Nexus For Java Script" section. If this is set, `cachito_nexus_hoster_password` must
+  described in the "Nexus Common Configuration" section. If this is set, `cachito_nexus_hoster_password` must
   also be set.
 * `cachito_nexus_js_hosted_repo_name` - the name of the Nexus hosted repository for JavaScript
   package managers. This defaults to `cachito-js-hosted`.
@@ -541,18 +541,6 @@ The hosted repository will contain all non-registry dependencies and the proxy r
 all dependencies from the JS registry. The union of these two repositories gives the set of all the JS
 dependencies ever encountered by Cachito.
 
-On each request, Cachito will create a proxy repository to the JS group repository
-(e.g. `cachito-js`). Cachito will populate this proxy repository to contain the subset of
-dependencies declared in the repository's lock file. Once populated, Cachito will block the
-repository from getting additional content. This prevents the consumer of the repository from
-installing something that was not declared in the lock file. This is further enforced by locking
-down the repository to a single user created for the request, which the consumer will use. Please
-keep in mind that for this to function properly, anonymous access needs to be disabled on the Nexus
-instance or at least not set to have read access on all repositories.
-
-These repositories and users created per request are deleted when the request is marked as stale
-or the request fails.
-
 ### Nexus For pip
 
 The pip package manager functionality relies on [Nexus Repository Manager 3][nexus-docs] to store
@@ -574,7 +562,7 @@ repositories will only contain content that Cachito has made available.
 These repositories are created per request and deleted when the request is marked as stale or the
 request fails.
 
-### Common Configuration
+### Nexus Common Configuration
 
 Refer to the "Configuring Workers" section to see how to configure Cachito to use Nexus. Please
 note that you may choose to use two Nexus instances. One for hosting the permanent content and the
@@ -583,6 +571,18 @@ already has a shared Nexus instance but doesn't want Cachito to have near admin 
 In this case, you will need to configure the following additional settings that point to the
 Nexus instance that hosts the permanent content: `cachito_nexus_hoster_username`,
 `cachito_nexus_hoster_password`, and `cachito_nexus_hoster_url`.
+
+On each request, Cachito will create a proxy repository to the group repository of the request's
+package manager (e.g. `cachito-pkg-manager`). Cachito will populate this proxy repository to
+contain the subset of dependencies declared in the repository's lock file. Once populated, Cachito
+will block the repository from getting additional content. This prevents the consumer of the
+repository from installing something that was not declared in the lock file. This is further
+enforced by locking down the repository to a single user created for the request, which the
+consumer will use. Please keep in mind that for this to function properly, anonymous access needs
+to be disabled on the Nexus instance or at least not set to have read access on all repositories.
+
+These repositories and users created per request are deleted when the request is marked as stale
+or the request fails.
 
 ## Package Managers
 
