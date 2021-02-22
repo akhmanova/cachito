@@ -590,16 +590,17 @@ or the request fails.
 
 The table below shows the supported package managers and their support level in Cachito.
 
-Feature                 | gomod | npm | pip | yarn  |
----                     | ---   | --- | --- | ---   |
-Baseline                | ✓     | ✓   | ✓   | ✓     |
-Content Manifest        | ✓     | ✓   | ✓   | ✓     |
-Dependency Replacements | ✓     | x   | x   | x     |
-Dev Dependencies        | ✓     | ✓   | ✓   | ✓[^1] |
-External Dependencies   | N/A   | ✓   | ✓   | ✓     |
-Multiple Paths          | ✓     | ✓   | ✓   | ✓     |
-Nested Dependencies     | ✓     | ✓   | x   | ✓     |
-Offline Installations   | ✓     | x   | x   | x     |
+Feature                 |  gomod  | npm | pip   | yarn           |
+---                     |  ---    | --- | ---   | ---            |
+Versions supported      | >= 1.13 | < 7 | >= 10 | >= 1.12.0, < 2 |
+Baseline                |  ✓      | ✓   | ✓     | ✓              |
+Content Manifest        |  ✓      | ✓   | ✓     | ✓              |
+Dependency Replacements |  ✓      | x   | x     | x              |
+Dev Dependencies        |  ✓      | ✓   | ✓     | ✓[^1]          |
+External Dependencies   |  N/A    | ✓   | ✓     | ✓              |
+Multiple Paths          |  ✓      | ✓   | ✓     | ✓              |
+Nested Dependencies     |  ✓      | ✓   | x     | ✓              |
+Offline Installations   |  ✓      | x   | x     | x              |
 
 [^1] Cachito keeps Dev Dependencies for yarn packages but can not distinguish them as it done for npm.
 
