@@ -12,7 +12,7 @@ setup(
     install_requires=[
         "celery<5",
         "gitpython",
-        "kombu<5",  # A celery dependency but it's directly imported
+        "kombu<6",  # A celery dependency but it's directly imported
         "packaging",
         "pyarn",
         "requests_kerberos",
